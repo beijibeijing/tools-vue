@@ -14,9 +14,10 @@
 
     <div class="header-right">
       <el-space :size="10">
+        原作者相关:
         <i class="fab fa-github" @click="toGithub" />
-        <el-button type="text" @click="aboutDialog = true">关于 & 赞助</el-button>
-        <el-button type="text" @click="thankDialog = true">感谢</el-button>
+        <!--<el-button type="text" @click="aboutDialog = true">关于 & 赞助</el-button>
+        <el-button type="text" @click="thankDialog = true">感谢</el-button>-->
         <el-button class="collapse-icon" type="text" @click="toggleFullscreen">
           <i v-if="!isFullscreen" class="fal fa-expand" />
           <i v-else class="fal fa-compress" />

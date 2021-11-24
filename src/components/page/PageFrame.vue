@@ -1,15 +1,15 @@
 <template>
-  <div class="page-form-container">
-    <div class="form-header">
-      <div v-if="$slots.title || title" class="form-title">
+  <div class="page-frame-container">
+    <div class="frame-header">
+      <div v-if="$slots.title || title" class="frame-title">
         <slot name="title">{{ title }}</slot>
       </div>
-      <div v-if="$slots.description || description" class="form-description">
+      <div v-if="$slots.description || description" class="frame-description">
         <slot name="description">{{ description }}</slot>
       </div>
     </div>
 
-    <div class="form-main">
+    <div class="frame-main">
       <slot />
     </div>
   </div>
@@ -17,26 +17,26 @@
 
 <script>
   export default {
-    name: 'PageForm',
+    name: 'PageFrame',
     props: ['title', 'description'],
   };
 </script>
 
 <style lang="scss" scoped>
-  .page-form-container {
-    .form-header {
+  .page-frame-container {
+    .frame-header {
       padding: 10px 10px;
       font-size: 20px;
       font-weight: bold;
       border-bottom: 1px solid $border-color;
 
-      .form-title {
+      .frame-title {
         display: flex;
         flex-wrap: wrap;
         align-items: center;
       }
 
-      .form-description {
+      .frame-description {
         margin-top: 20px;
         font-size: 12px;
         font-weight: normal;
@@ -44,7 +44,7 @@
       }
     }
 
-    .form-main {
+    .frame-main {
       padding: 20px;
 
       ::v-deep(.el-form) {

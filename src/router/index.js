@@ -36,7 +36,7 @@ const routes = [
         name: 'pixelArt',
         component: () => import(/* webpackChunkName: "pixelArt" */ '../views/pixel-art/PixelArt'),
         meta: {
-          title: '像素画',
+          title: '像素编辑',
         },
       },
       {

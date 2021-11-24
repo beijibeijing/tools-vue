@@ -10,7 +10,7 @@
       </template>
 
       <template #form>
-        <PageForm title="像素画">
+        <PageForm title="单帧编辑">
           <el-button-group class="form-bar">
             <el-button size="small" :disabled="!historyList.length" @click="undoHistory">
               <i class="fas fa-undo" />
@@ -25,47 +25,68 @@
           </el-button-group>
 
           <el-form :model="form" label-width="auto" size="small">
-            <el-form-item label="宽度">
+            <el-form-item label="列数量" class="form-items">
               <el-input-number
                 v-model="form.widthPixel"
                 :min="1"
                 :max="128"
                 :precision="0"
               />
-              <span class="tip">（像素）</span>
+              <span class="tip">(灯珠)</span>
             </el-form-item>
-            <el-form-item label="高度">
+            <el-form-item label="行数量" class="form-items">
               <el-input-number
                 v-model="form.heightPixel"
                 :min="1"
                 :max="128"
                 :precision="0"
               />
-              <span class="tip">（像素）</span>
+              <span class="tip">(灯珠)</span>
             </el-form-item>
-            <el-form-item label="工具">
+            <el-form-item label="间距" class="form-items">
+              <el-input-number
+                v-model="form.side"
+                :min="0"
+                :max="128"
+                :precision="0"
+              />
+              <span class="tip">(像素)</span>
+            </el-form-item>
+            <el-form-item label="工具" class="form-items">
               <el-space :size="10" wrap>
                 <el-check-tag :checked="form.type === 'pencil'" @change="changeType('pencil')">铅笔</el-check-tag>
                 <el-check-tag :checked="form.type === 'eraser'" @change="changeType('eraser')">橡皮擦</el-check-tag>
                 <el-check-tag :checked="form.type === 'absorber'" @change="changeType('absorber')">吸色器</el-check-tag>
               </el-space>
             </el-form-item>
-            <el-form-item label="形状">
+            <el-form-item label="形状" class="form-items">
               <el-radio-group v-model="form.shape">
                 <el-radio-button label="square">方形</el-radio-button>
                 <el-radio-button label="round">圆形</el-radio-button>
               </el-radio-group>
             </el-form-item>
-            <el-form-item label="颜色">
+            <el-form-item label="颜色-预制" class="form-items">
+              <el-space :size="10" wrap>
+                <el-check-tag :checked="form.color === 'rgba(255,0,0,1)'" @change="changeColor('rgba(255,0,0,1)')">红</el-check-tag>
+                <el-check-tag :checked="form.color === 'rgba(255,255,0,1)'" @change="changeColor('rgba(255,255,0,1)')">黄</el-check-tag>
+                <el-check-tag :checked="form.color === 'rgba(0,255,0,1)'" @change="changeColor('rgba(0,255,0,1)')">绿</el-check-tag>
+                <el-check-tag :checked="form.color === 'rgba(0,255,255,1)'" @change="changeColor('rgba(0,255,255,1)')">青</el-check-tag>
+                <el-check-tag :checked="form.color === 'rgba(0,0,255,1)'" @change="changeColor('rgba(0,0,255,1)')">蓝</el-check-tag>
+                <el-check-tag :checked="form.color === 'rgba(255,0,255,1)'" @change="changeColor('rgba(255,0,255,1)')">紫</el-check-tag>
+                <el-check-tag :checked="form.color === 'rgba(0,0,0,1)'" @change="changeColor('rgba(0,0,0,1)')">黑</el-check-tag>
+                <el-check-tag :checked="form.color === 'rgba(255,255,255,1)'" @change="changeColor('rgba(255,255,255,1)')">白</el-check-tag>
+              </el-space>
+            </el-form-item>
+            <el-form-item label="颜色-调色板" class="form-items">
               <el-color-picker v-model="form.color" show-alpha />
             </el-form-item>
-            <el-form-item label="黑白">
+            <el-form-item label="黑白" class="form-items">
               <el-switch v-model="form.monochrome" />
             </el-form-item>
-            <el-form-item label="网格">
+            <el-form-item label="网格" class="form-items">
               <el-switch v-model="form.grid" />
             </el-form-item>
-            <el-form-item label="缩放">
+            <el-form-item label="缩放(像素)" class="form-items">
               <el-slider v-model="form.size" :min="1" :max="100" />
             </el-form-item>
           </el-form>
@@ -83,14 +104,30 @@
                 </el-upload>
               </el-col>
               <el-col :span="12">
-                <el-button plain size="medium" @click="exportJson">导出数据</el-button>
+                <el-button plain size="medium" @click="exportNewJson">导出数据</el-button>
               </el-col>
               <el-col :span="24">
                 <el-button type="primary" size="medium" @click="exportImage">导出图片</el-button>
               </el-col>
+              <el-col :span="24">
+                <el-input v-model="form.jsonData" autosize type="textarea" />
+              </el-col>
+              <el-col :span="24">
+                <el-button type="primary" size="medium" @click="getNewJson">生成数据</el-button>
+              </el-col>
             </el-row>
           </div>
         </PageForm>
+      </template>
+
+      <template #frame>
+        <PageFrame title="帧管理">
+          <el-form :model="form" label-width="auto" size="small">
+            <el-form-item label="缩放(像素)" class="form-items">
+              <el-slider v-model="form.size" :min="1" :max="100" />
+            </el-form-item>
+          </el-form>
+        </PageFrame>
       </template>
     </Page>
   </div>
@@ -99,6 +136,7 @@
 <script>
   import Page from '@/components/page/Page';
   import PageForm from '@/components/page/PageForm';
+  import PageFrame from '@/components/page/PageFrame';
   import { computed, getCurrentInstance, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue';
   import html2canvas from 'html2canvas';
   import _ from 'lodash';
@@ -109,6 +147,7 @@
     components: {
       Page,
       PageForm,
+      PageFrame,
     },
     setup() {
       const { proxy } = getCurrentInstance();
@@ -117,14 +156,16 @@
       const hoverCanvas = ref(null);
       const hoverContext = ref(null);
       let form = reactive({
-        heightPixel: 16,
-        widthPixel: 16,
+        heightPixel: 5,
+        widthPixel: 36,
         type: 'pencil',
         shape: 'square',
-        color: 'rgba(0, 0, 0, 1)',
+        color: 'rgba(0,0,0,0)', // 不亮
         monochrome: false,
         grid: true,
-        size: 30,
+        size: 5,
+        side: 0,
+        jsonData: '',
       });
       const dotList = ref([]);
       const historyList = ref([]);
@@ -170,8 +211,10 @@
       };
 
       const renderCanvas = () => {
-        canvas.value.width = form.widthPixel * pixel.value + lineWidth.value;
-        canvas.value.height = form.heightPixel * pixel.value + lineWidth.value;
+        // canvas.value.width = form.widthPixel * pixel.value + lineWidth.value; // beiji
+        // canvas.value.height = form.heightPixel * pixel.value + lineWidth.value; // beiji
+        canvas.value.width = form.widthPixel * pixel.value + lineWidth.value + form.side * (form.widthPixel - 1);
+        canvas.value.height = form.heightPixel * pixel.value + lineWidth.value + form.side * (form.heightPixel - 1);
         hoverCanvas.value.width = canvas.value.width;
         hoverCanvas.value.height = canvas.value.height;
 
@@ -182,6 +225,7 @@
         });
       };
 
+      // 鼠标移动光标
       const renderHoverCanvas = () => {
         hoverContext.value.clearRect(0, 0, hoverCanvas.value.width, hoverCanvas.value.height);
 
@@ -193,15 +237,19 @@
           hoverContext.value.strokeStyle = '#409eff';
 
           if (form.shape === 'square') {
-            const x = colIndex * pixel.value + lineWidth.value / 2;
-            const y = rowIndex * pixel.value + lineWidth.value / 2;
+            // const x = colIndex * pixel.value + lineWidth.value / 2; // beiji
+            // const y = rowIndex * pixel.value + lineWidth.value / 2; // beiji
+            const x = colIndex * pixel.value + lineWidth.value / 2 + colIndex * form.side; // beiji
+            const y = rowIndex * pixel.value + lineWidth.value / 2 + rowIndex * form.side; // beiji
             const w = pixel.value;
             const h = pixel.value;
             hoverContext.value.fillRect(x, y, w, h);
             hoverContext.value.strokeRect(x, y, w, h);
           } else if (form.shape === 'round') {
-            const x = colIndex * pixel.value + pixel.value / 2 + lineWidth.value / 2;
-            const y = rowIndex * pixel.value + pixel.value / 2 + lineWidth.value / 2;
+            // const x = colIndex * pixel.value + pixel.value / 2 + lineWidth.value / 2; // beiji
+            // const y = rowIndex * pixel.value + pixel.value / 2 + lineWidth.value / 2; // beiji
+            const x = colIndex * pixel.value + pixel.value / 2 + lineWidth.value / 2 + colIndex * form.side; // beiji
+            const y = rowIndex * pixel.value + pixel.value / 2 + lineWidth.value / 2 + rowIndex * form.side; // beiji
             const radius = pixel.value / 2;
             const startAngle = 0;
             const endAngle = Math.PI * 2;
@@ -214,7 +262,8 @@
       };
 
       const addDot = (rowIndex, colIndex, color) => {
-        context.value.clearRect(colIndex * pixel.value, rowIndex * pixel.value, pixel.value, pixel.value);
+        // context.value.clearRect(colIndex * pixel.value, rowIndex * pixel.value, pixel.value, pixel.value); // beiji
+        context.value.clearRect(colIndex * pixel.value + colIndex * form.side, rowIndex * pixel.value + rowIndex * form.side, pixel.value, pixel.value); // beiji
         context.value.lineWidth = lineWidth.value;
         context.value.strokeStyle = '#dcdfe6';
 
@@ -226,8 +275,10 @@
         }
 
         if (form.shape === 'square') {
-          const x = colIndex * pixel.value + lineWidth.value / 2;
-          const y = rowIndex * pixel.value + lineWidth.value / 2;
+          // const x = colIndex * pixel.value + lineWidth.value / 2; // beiji
+          // const y = rowIndex * pixel.value + lineWidth.value / 2; // beiji
+          const x = colIndex * pixel.value + lineWidth.value / 2 + colIndex * form.side; // beiji
+          const y = rowIndex * pixel.value + lineWidth.value / 2 + rowIndex * form.side; // beiji
           const w = pixel.value;
           const h = pixel.value;
           context.value.fillRect(x, y, w, h);
@@ -235,8 +286,10 @@
             context.value.strokeRect(x, y, w, h);
           }
         } else if (form.shape === 'round') {
-          const x = colIndex * pixel.value + pixel.value / 2 + lineWidth.value / 2;
-          const y = rowIndex * pixel.value + pixel.value / 2 + lineWidth.value / 2;
+          // const x = colIndex * pixel.value + pixel.value / 2 + lineWidth.value / 2; // beiji
+          // const y = rowIndex * pixel.value + pixel.value / 2 + lineWidth.value / 2; // beiji
+          const x = colIndex * pixel.value + pixel.value / 2 + lineWidth.value / 2 + colIndex * form.side; // beiji
+          const y = rowIndex * pixel.value + pixel.value / 2 + lineWidth.value / 2 + rowIndex * form.side; // beiji
           const radius = pixel.value / 2;
           const startAngle = 0;
           const endAngle = Math.PI * 2;
@@ -251,6 +304,11 @@
 
       const changeType = type => {
         form.type = type;
+      };
+
+      // beiji 使用与预制色修改
+      const changeColor = color => {
+        form.color = color;
       };
 
       const clearPixelArt = () => {
@@ -271,10 +329,14 @@
       const onMousemove = e => {
         // 算式：const x = colIndex * pixel.value + lineWidth.value;
         //       const y = rowIndex * pixel.value + lineWidth.value;
+        // const x = colIndex * pixel.value + lineWidth.value + colIndex * form.side; // beiji
+        // const y = rowIndex * pixel.value + lineWidth.value + rowIndex * form.side; // beiji
         const x = e.offsetX;
         const y = e.offsetY;
-        const colIndex = Math.floor((x - lineWidth.value) / pixel.value);
-        const rowIndex = Math.floor((y - lineWidth.value) / pixel.value);
+        // const colIndex = Math.floor((x - lineWidth.value) / pixel.value); // beiji
+        // const rowIndex = Math.floor((y - lineWidth.value) / pixel.value); // beiji
+        const colIndex = Math.floor((x - lineWidth.value) / (pixel.value + form.side));
+        const rowIndex = Math.floor((y - lineWidth.value) / (pixel.value + form.side));
         if (colIndex < 0 || rowIndex < 0) {
           return;
         }
@@ -344,13 +406,73 @@
           }
         });
       };
+
+      // beiji 生成json
+      const createRGBJson = () => {
+        // let data = JSON.stringify({
+        //  dotList: dotList.value,
+        // });
+        let data = '0x66 0x88 0x01 0xb4'; // 协议头 字段类型 数组
+        dotList.value.forEach((row, rowIndex) => {
+          row.forEach((col, colIndex) => {
+            // console.log('col:' + col);
+            // console.log('col is' + typeof(col));
+            let dColor = '';
+            let colString = col.toString()
+            switch(colString){
+            case '255,0,0,1': // 红
+              dColor = '0x01';
+              break;
+            case '255,255,0,1': // 黄
+              dColor = '0x02';
+              break;
+            case '0,255,0,1': // 绿
+              dColor = '0x03';
+              break;
+            case '0,255,255,1': // 青
+              dColor = '0x04';
+              break;
+            case '0,0,255,1': // 蓝
+              dColor = '0x05';
+              break;
+            case '255,0,255,1': // 紫
+              dColor = '0x06';
+              break;
+            case '255,255,255,1': // 白
+              dColor = '0x07';
+              break;
+            case '0,0,0,1': // 黑
+              dColor = '0x08';
+              break;
+            default: // '0,0,0,0': // 不亮
+              dColor = '0x00';
+            }
+            data = data + ' ' + dColor;
+          });
+        });
+        data = data + ' 0x01 0x08 0x05';// 豪秒 校验位 校验位
+        return data;
+      }
+
+      // beiji 获取json
+      const getNewJson = () => {
+        form.jsonData = createRGBJson();
+      }
+
+      // beiji 输出json
+      const exportNewJson = () => {
+        let data = createRGBJson();
+        let blob = new Blob([data], { type: 'application/json' });
+        proxy.downloadBlob(blob, '像素编辑');
+      };
+
       const exportJson = () => {
         let data = JSON.stringify({
           form,
           dotList: dotList.value,
         });
         let blob = new Blob([data], { type: 'application/json' });
-        proxy.downloadBlob(blob, '像素画');
+        proxy.downloadBlob(blob, '像素编辑');
       };
 
       const exportImage = () => {
@@ -359,14 +481,14 @@
           backgroundColor: 'transparent',
         }).then(canvas => {
           canvas.toBlob(blob => {
-            proxy.downloadBlob(blob, '像素画');
+            proxy.downloadBlob(blob, '像素编辑');
           });
         });
       };
 
       watch(() => {
-        const { heightPixel, widthPixel, shape, monochrome, grid, size } = form;
-        return { heightPixel, widthPixel, shape, monochrome, grid, size };
+        const { heightPixel, widthPixel, shape, monochrome, grid, size, side } = form;
+        return { heightPixel, widthPixel, shape, monochrome, grid, size, side };
       }, () => {
         createDotList();
       });
@@ -391,6 +513,10 @@
         importJson,
         exportJson,
         exportImage,
+        changeColor,
+        createRGBJson,
+        getNewJson,
+        exportNewJson,
       };
     },
   };
@@ -415,15 +541,16 @@
 
     .form-main {
       .form-bar {
-        margin-bottom: 20px;
+        margin-bottom: 1px;
+        padding: 10px;
       }
 
       .button-group {
         .el-row {
-          margin-top: -20px;
+          margin-top: -30px;
 
           .el-col {
-            margin-top: 20px;
+            margin-top: 10px;
 
             ::v-deep(.el-upload) {
               width: 100%;

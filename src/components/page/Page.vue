@@ -12,6 +12,11 @@
         <slot name="form" />
       </el-scrollbar>
     </div>
+    <div v-show="$slots.frame" class="page-frame" :style="frameStyle">
+      <el-scrollbar>
+        <slot name="frame" />
+      </el-scrollbar>
+    </div>
   </div>
 </template>
 
@@ -29,7 +34,12 @@
       ...mapState(['rightCollapse']),
       formStyle() {
         return {
-          marginRight: this.rightCollapse ? '-400px' : '0',
+          marginRight: this.rightCollapse ? '-1000px' : '0',
+        };
+      },
+      frameStyle() {
+        return {
+          marginRight: this.rightCollapse ? '-600px' : '0',
         };
       },
     },
@@ -58,6 +68,14 @@
     .page-form {
       height: 100%;
       width: 400px;
+      flex-shrink: 0;
+      border-left: 1px solid $border-color;
+      transition: all 0.3s;
+    }
+
+    .page-frame {
+      height: 100%;
+      width: 600px;
       flex-shrink: 0;
       border-left: 1px solid $border-color;
       transition: all 0.3s;

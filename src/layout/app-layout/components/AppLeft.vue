@@ -1,7 +1,7 @@
 <template>
   <div class="app-left-container">
     <el-row>
-      <el-col v-for="(item,index) in toolList" :key="index" :span="12">
+      <el-col v-for="(item,index) in toolList" :key="index" :span="16">
         <div class="item-main" :style="itemStyle(item)" @click="toPath(item)">
           <div class="item-icon">
             <i :class="`fal ${item.icon}`" />
