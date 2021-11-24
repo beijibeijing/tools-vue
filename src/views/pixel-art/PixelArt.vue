@@ -25,6 +25,49 @@
           </el-button-group>
 
           <el-form :model="form" label-width="auto" size="small">
+            <el-form-item label="工具" class="form-items">
+              <el-space :size="10" wrap>
+                <el-check-tag :checked="form.type === 'pencil'" @change="changeType('pencil')">铅笔</el-check-tag>
+                <el-check-tag :checked="form.type === 'eraser'" @change="changeType('eraser')">橡皮擦</el-check-tag>
+                <el-check-tag :checked="form.type === 'absorber'" @change="changeType('absorber')">吸色器</el-check-tag>
+              </el-space>
+            </el-form-item>
+            <el-form-item label="颜色-预制" class="form-items">
+              <el-space :size="10" wrap>
+                <el-check-tag :checked="form.color === 'rgba(255,0,0,1)'" @change="changeColor('rgba(255,0,0,1)')">红</el-check-tag>
+                <el-check-tag :checked="form.color === 'rgba(255,255,0,1)'" @change="changeColor('rgba(255,255,0,1)')">黄</el-check-tag>
+                <el-check-tag :checked="form.color === 'rgba(0,255,0,1)'" @change="changeColor('rgba(0,255,0,1)')">绿</el-check-tag>
+                <el-check-tag :checked="form.color === 'rgba(0,255,255,1)'" @change="changeColor('rgba(0,255,255,1)')">青</el-check-tag>
+                <el-check-tag :checked="form.color === 'rgba(0,0,255,1)'" @change="changeColor('rgba(0,0,255,1)')">蓝</el-check-tag>
+                <el-check-tag :checked="form.color === 'rgba(255,0,255,1)'" @change="changeColor('rgba(255,0,255,1)')">紫</el-check-tag>
+                <el-check-tag :checked="form.color === 'rgba(0,0,0,1)'" @change="changeColor('rgba(0,0,0,1)')">黑</el-check-tag>
+                <el-check-tag :checked="form.color === 'rgba(255,255,255,1)'" @change="changeColor('rgba(255,255,255,1)')">白</el-check-tag>
+              </el-space>
+            </el-form-item>
+            <el-form-item label="颜色-调色板" class="form-items">
+              <el-color-picker v-model="form.color" show-alpha />
+            </el-form-item>
+          </el-form>
+
+          <div class="button-group">
+            <el-row :gutter="10">
+              <el-col :span="24">
+                <el-button type="primary" size="medium" @click="exportImage">导出图片</el-button>
+              </el-col>
+              <el-col :span="24">
+                <el-input v-model="form.jsonData" autosize type="textarea" />
+              </el-col>
+              <el-col :span="24">
+                <el-button type="primary" size="medium" @click="getNewJson">生成数据</el-button>
+              </el-col>
+            </el-row>
+          </div>
+        </PageForm>
+      </template>
+
+      <template #frame>
+        <PageFrame title="帧管理">
+          <el-form :model="form" label-width="auto" size="small">
             <el-form-item label="列数量" class="form-items">
               <el-input-number
                 v-model="form.widthPixel"
@@ -52,33 +95,11 @@
               />
               <span class="tip">(像素)</span>
             </el-form-item>
-            <el-form-item label="工具" class="form-items">
-              <el-space :size="10" wrap>
-                <el-check-tag :checked="form.type === 'pencil'" @change="changeType('pencil')">铅笔</el-check-tag>
-                <el-check-tag :checked="form.type === 'eraser'" @change="changeType('eraser')">橡皮擦</el-check-tag>
-                <el-check-tag :checked="form.type === 'absorber'" @change="changeType('absorber')">吸色器</el-check-tag>
-              </el-space>
-            </el-form-item>
             <el-form-item label="形状" class="form-items">
               <el-radio-group v-model="form.shape">
                 <el-radio-button label="square">方形</el-radio-button>
                 <el-radio-button label="round">圆形</el-radio-button>
               </el-radio-group>
-            </el-form-item>
-            <el-form-item label="颜色-预制" class="form-items">
-              <el-space :size="10" wrap>
-                <el-check-tag :checked="form.color === 'rgba(255,0,0,1)'" @change="changeColor('rgba(255,0,0,1)')">红</el-check-tag>
-                <el-check-tag :checked="form.color === 'rgba(255,255,0,1)'" @change="changeColor('rgba(255,255,0,1)')">黄</el-check-tag>
-                <el-check-tag :checked="form.color === 'rgba(0,255,0,1)'" @change="changeColor('rgba(0,255,0,1)')">绿</el-check-tag>
-                <el-check-tag :checked="form.color === 'rgba(0,255,255,1)'" @change="changeColor('rgba(0,255,255,1)')">青</el-check-tag>
-                <el-check-tag :checked="form.color === 'rgba(0,0,255,1)'" @change="changeColor('rgba(0,0,255,1)')">蓝</el-check-tag>
-                <el-check-tag :checked="form.color === 'rgba(255,0,255,1)'" @change="changeColor('rgba(255,0,255,1)')">紫</el-check-tag>
-                <el-check-tag :checked="form.color === 'rgba(0,0,0,1)'" @change="changeColor('rgba(0,0,0,1)')">黑</el-check-tag>
-                <el-check-tag :checked="form.color === 'rgba(255,255,255,1)'" @change="changeColor('rgba(255,255,255,1)')">白</el-check-tag>
-              </el-space>
-            </el-form-item>
-            <el-form-item label="颜色-调色板" class="form-items">
-              <el-color-picker v-model="form.color" show-alpha />
             </el-form-item>
             <el-form-item label="黑白" class="form-items">
               <el-switch v-model="form.monochrome" />
@@ -90,8 +111,13 @@
               <el-slider v-model="form.size" :min="1" :max="100" />
             </el-form-item>
           </el-form>
-
+          <el-divider />
           <div class="button-group">
+            <el-row :gutter="10">
+              <el-col :span="12">
+                <div style="padding-top: 10px;">数据</div>
+              </el-col>
+            </el-row>
             <el-row :gutter="10">
               <el-col :span="12">
                 <el-upload
@@ -106,27 +132,36 @@
               <el-col :span="12">
                 <el-button plain size="medium" @click="exportNewJson">导出数据</el-button>
               </el-col>
-              <el-col :span="24">
-                <el-button type="primary" size="medium" @click="exportImage">导出图片</el-button>
+            </el-row>
+          </div>
+          <el-divider />
+          <el-form :model="form" label-width="auto" size="small">
+            <el-form-item label="帧列表" class="form-items">
+              <el-space :size="10" wrap>
+                <el-check-tag :checked="form.color === '1'" @change="changeColor('1')">1</el-check-tag>
+                <el-check-tag :checked="form.color === 'rgba(255,255,0,1)'" @change="changeColor('rgba(255,255,0,1)')">2</el-check-tag>
+                <el-check-tag :checked="form.color === 'rgba(0,255,0,1)'" @change="changeColor('rgba(0,255,0,1)')">3</el-check-tag>
+                <el-check-tag :checked="form.color === 'rgba(0,255,255,1)'" @change="changeColor('rgba(0,255,255,1)')">4</el-check-tag>
+                <el-check-tag :checked="form.color === 'rgba(0,0,255,1)'" @change="changeColor('rgba(0,0,255,1)')">5</el-check-tag>
+                <el-check-tag :checked="form.color === 'rgba(255,0,255,1)'" @change="changeColor('rgba(255,0,255,1)')">6</el-check-tag>
+                <el-check-tag :checked="form.color === 'rgba(0,0,0,1)'" @change="changeColor('rgba(0,0,0,1)')">7</el-check-tag>
+                <el-check-tag :checked="form.color === 'rgba(255,255,255,1)'" @change="changeColor('rgba(255,255,255,1)')">8</el-check-tag>
+              </el-space>
+            </el-form-item>
+          </el-form>
+          <div class="button-group">
+            <el-row :gutter="10">
+              <el-col :span="6">
+                <el-button size="medium" type="primary" @click="exportNewJson">播放</el-button>
               </el-col>
-              <el-col :span="24">
-                <el-input v-model="form.jsonData" autosize type="textarea" />
+              <el-col :span="6">
+                <el-button size="medium" type="primary" @click="exportNewJson">增加一帧</el-button>
               </el-col>
-              <el-col :span="24">
-                <el-button type="primary" size="medium" @click="getNewJson">生成数据</el-button>
+              <el-col :span="6">
+                <el-button size="medium" type="danger" @click="exportNewJson">删除当前帧</el-button>
               </el-col>
             </el-row>
           </div>
-        </PageForm>
-      </template>
-
-      <template #frame>
-        <PageFrame title="帧管理">
-          <el-form :model="form" label-width="auto" size="small">
-            <el-form-item label="缩放(像素)" class="form-items">
-              <el-slider v-model="form.size" :min="1" :max="100" />
-            </el-form-item>
-          </el-form>
         </PageFrame>
       </template>
     </Page>
@@ -160,11 +195,11 @@
         widthPixel: 36,
         type: 'pencil',
         shape: 'square',
-        color: 'rgba(0,0,0,0)', // 不亮
+        color: 'rgba(0,0,0,0)', // 不亮,默认颜色或整体颜色
         monochrome: false,
         grid: true,
         size: 5,
-        side: 0,
+        side: 5,
         jsonData: '',
       });
       const dotList = ref([]);
@@ -557,7 +592,33 @@
             }
 
             .el-button {
+              margin-top: 30px;
               width: 100%;
+            }
+          }
+        }
+      }
+    }
+
+    .frame-main {
+      .button-group {
+        .el-row {
+          margin-top: -30px;
+
+          .el-col {
+            margin-top: 10px;
+
+            ::v-deep(.el-upload) {
+              width: 100%;
+            }
+
+            .el-button {
+              margin-top: 30px;
+              width: 100%;
+            }
+
+            .bs-title {
+              margin-top: 50px;
             }
           }
         }
