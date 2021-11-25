@@ -3,7 +3,7 @@ import { arrayToColor, colorToArray, getStraightDotList } from '@/utils';
 const usePixel = (usePixelKey, type) => {
   const {
     form,
-    dotList,
+    currentFrame,
     downDot,
     lastDot,
     currentDot,
@@ -26,7 +26,7 @@ const usePixel = (usePixelKey, type) => {
     const addDotList = getStraightDotList({ x: lastX, y: lastY }, { x: currentX, y: currentY });
     const colors = colorToArray(form.color, true);
     addDotList.forEach(dot => {
-      dotList.value[dot.x][dot.y] = colors;
+      currentFrame.value.dotList[dot.x][dot.y] = colors;
       addDot(dot.x, dot.y, colors);
     });
   };
@@ -35,13 +35,13 @@ const usePixel = (usePixelKey, type) => {
     const addDotList = getStraightDotList({ x: lastX, y: lastY }, { x: currentX, y: currentY });
     addDotList.forEach(dot => {
       const colors = [255, 255, 255, 0];
-      dotList.value[dot.x][dot.y] = colors;
+      currentFrame.value.dotList[dot.x][dot.y] = colors;
       addDot(dot.x, dot.y, colors);
     });
   };
 
   const useAbsorber = () => {
-    form.color = arrayToColor(dotList.value[currentX][currentY], true);
+    form.color = arrayToColor(currentFrame.value.dotList[currentX][currentY], true);
   };
 
   switch (type) {

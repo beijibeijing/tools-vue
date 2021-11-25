@@ -42,6 +42,7 @@
                 <el-check-tag :checked="form.color === 'rgba(255,0,255,1)'" @change="changeColor('rgba(255,0,255,1)')">紫</el-check-tag>
                 <el-check-tag :checked="form.color === 'rgba(0,0,0,1)'" @change="changeColor('rgba(0,0,0,1)')">黑</el-check-tag>
                 <el-check-tag :checked="form.color === 'rgba(255,255,255,1)'" @change="changeColor('rgba(255,255,255,1)')">白</el-check-tag>
+                <el-check-tag :checked="form.color === 'rgba(0,0,0,0)'" @change="changeColor('rgba(0,0,0,0)')">不亮</el-check-tag>
               </el-space>
             </el-form-item>
             <el-form-item label="颜色-调色板" class="form-items">
@@ -54,11 +55,15 @@
               <el-col :span="24">
                 <el-button type="primary" size="medium" @click="exportImage">导出图片</el-button>
               </el-col>
-              <el-col :span="24">
-                <el-input v-model="form.jsonData" autosize type="textarea" />
-              </el-col>
+            </el-row>
+            <el-row :gutter="10">
               <el-col :span="24">
                 <el-button type="primary" size="medium" @click="getNewJson">生成数据</el-button>
+              </el-col>
+            </el-row>
+            <el-row :gutter="10">
+              <el-col :span="24">
+                <el-input v-model="form.jsonData" autosize type="textarea" />
               </el-col>
             </el-row>
           </div>
@@ -136,29 +141,32 @@
           </div>
           <el-divider />
           <el-form :model="form" label-width="auto" size="small">
-            <el-form-item label="帧列表" class="form-items">
+            <el-form-item
+              label="帧列表"
+              class="form-items"
+            >
               <el-space :size="10" wrap>
-                <el-check-tag :checked="form.color === '1'" @change="changeColor('1')">1</el-check-tag>
-                <el-check-tag :checked="form.color === 'rgba(255,255,0,1)'" @change="changeColor('rgba(255,255,0,1)')">2</el-check-tag>
-                <el-check-tag :checked="form.color === 'rgba(0,255,0,1)'" @change="changeColor('rgba(0,255,0,1)')">3</el-check-tag>
-                <el-check-tag :checked="form.color === 'rgba(0,255,255,1)'" @change="changeColor('rgba(0,255,255,1)')">4</el-check-tag>
-                <el-check-tag :checked="form.color === 'rgba(0,0,255,1)'" @change="changeColor('rgba(0,0,255,1)')">5</el-check-tag>
-                <el-check-tag :checked="form.color === 'rgba(255,0,255,1)'" @change="changeColor('rgba(255,0,255,1)')">6</el-check-tag>
-                <el-check-tag :checked="form.color === 'rgba(0,0,0,1)'" @change="changeColor('rgba(0,0,0,1)')">7</el-check-tag>
-                <el-check-tag :checked="form.color === 'rgba(255,255,255,1)'" @change="changeColor('rgba(255,255,255,1)')">8</el-check-tag>
+                <el-check-tag
+                  v-for="(_, index) in frameLists"
+                  :key="'frame' + index"
+                  :checked="form.currentFrameIndex === index"
+                  @change="changeFrame(index)"
+                >
+                  {{ 1 + index }}
+                </el-check-tag>
               </el-space>
             </el-form-item>
           </el-form>
           <div class="button-group">
             <el-row :gutter="10">
               <el-col :span="6">
-                <el-button size="medium" type="primary" @click="exportNewJson">播放</el-button>
+                <el-button size="medium" type="primary" @click="palyFrames()">播放</el-button>
               </el-col>
-              <el-col :span="6">
-                <el-button size="medium" type="primary" @click="exportNewJson">增加一帧</el-button>
+              <el-col :span="8">
+                <el-button size="medium" type="primary" @click="addFrame()">增加一帧</el-button>
               </el-col>
-              <el-col :span="6">
-                <el-button size="medium" type="danger" @click="exportNewJson">删除当前帧</el-button>
+              <el-col :span="10">
+                <el-button size="medium" type="danger" @click="deleteFrame(index)">删除当前帧</el-button>
               </el-col>
             </el-row>
           </div>
@@ -201,8 +209,20 @@
         size: 5,
         side: 5,
         jsonData: '',
+        currentFrameIndex: 0,
       });
-      const dotList = ref([]);
+      const frameLists = ref([ // 帧列表
+        {
+          color: [0,0,0,0],
+          frameTime: 0,
+          dotList: [],
+        },
+      ]);
+      const currentFrame = ref( {
+        color: [0,0,0,0],
+        frameTime: 0,
+        dotList: [],
+      }); // 当前帧
       const historyList = ref([]);
       const downDot = ref({}); // 鼠标按下的点
       const lastDot = ref({}); // 上一个移动的点
@@ -238,10 +258,10 @@
         const list = new Array(pixelY).fill(null).map(() => new Array(pixelX).fill(defaultColor));
         list.forEach((row, rowIndex) => {
           row.forEach((col, colIndex) => {
-            list[rowIndex][colIndex] = dotList.value?.[rowIndex]?.[colIndex] || col;
+            list[rowIndex][colIndex] = currentFrame.value?.dotList?.[rowIndex]?.[colIndex] || col;
           });
         });
-        dotList.value = list;
+        currentFrame.value.dotList = list;
         renderCanvas();
       };
 
@@ -253,7 +273,7 @@
         hoverCanvas.value.width = canvas.value.width;
         hoverCanvas.value.height = canvas.value.height;
 
-        dotList.value.forEach((row, rowIndex) => {
+        currentFrame.value.dotList.forEach((row, rowIndex) => {
           row.forEach((col, colIndex) => {
             addDot(rowIndex, colIndex, col);
           });
@@ -347,13 +367,13 @@
       };
 
       const clearPixelArt = () => {
-        dotList.value = [];
+        currentFrame.value.dotList = [];
         createDotList();
       };
 
       const usePixelKey = {
         form,
-        dotList,
+        currentFrame,
         downDot,
         lastDot,
         currentDot,
@@ -404,13 +424,13 @@
       };
 
       const saveHistory = () => {
-        historyList.value.push(_.cloneDeep(dotList.value));
+        historyList.value.push(_.cloneDeep(currentFrame.value.dotList));
       };
 
       const undoHistory = () => {
         const history = historyList.value.pop();
         if (history) {
-          dotList.value = history;
+          currentFrame.value.dotList = history;
           createDotList();
         }
       };
@@ -434,7 +454,7 @@
           try {
             let data = JSON.parse(e.target?.result);
             form = Object.assign(form, data.form);
-            dotList.value = data.dotList;
+            currentFrame.value.dotList = data.dotList;
             createDotList();
           } catch (e) {
             this.$message.error('数据导入失败');
@@ -448,7 +468,7 @@
         //  dotList: dotList.value,
         // });
         let data = '0x66 0x88 0x01 0xb4'; // 协议头 字段类型 数组
-        dotList.value.forEach((row, rowIndex) => {
+        currentFrame.value.dotList.forEach((row, rowIndex) => {
           row.forEach((col, colIndex) => {
             // console.log('col:' + col);
             // console.log('col is' + typeof(col));
@@ -504,7 +524,7 @@
       const exportJson = () => {
         let data = JSON.stringify({
           form,
-          dotList: dotList.value,
+          dotList: currentFrame.value.dotList,
         });
         let blob = new Blob([data], { type: 'application/json' });
         proxy.downloadBlob(blob, '像素编辑');
@@ -521,9 +541,30 @@
         });
       };
 
+      // 帧处理相关
+      const changeFrame = index => {
+        frameLists.value[form.currentFrameIndex] = currentFrame.value;
+        form.currentFrameIndex = index;
+        currentFrame.value = frameLists.value[index];
+      }
+      // 播放帧动画
+      const playFrames = () => {
+      }
+      // 增加帧
+      const addFrame = () => {
+        frameLists.value.push({
+          color: [0,0,0,0],
+          frameTime: 0,
+          dotList: [],
+        })
+      }
+      // 删除帧
+      const deleteFrames = index => {
+      }
+
       watch(() => {
-        const { heightPixel, widthPixel, shape, monochrome, grid, size, side } = form;
-        return { heightPixel, widthPixel, shape, monochrome, grid, size, side };
+        const { heightPixel, widthPixel, shape, monochrome, grid, size, side, currentFrameIndex } = form;
+        return { heightPixel, widthPixel, shape, monochrome, grid, size, side, currentFrameIndex };
       }, () => {
         createDotList();
       });
@@ -540,7 +581,8 @@
         hoverCanvas,
         hoverContext,
         form,
-        dotList,
+        currentFrame,
+        frameLists,
         historyList,
         changeType,
         clearPixelArt,
@@ -552,6 +594,10 @@
         createRGBJson,
         getNewJson,
         exportNewJson,
+        changeFrame,
+        playFrames,
+        addFrame,
+        deleteFrames,
       };
     },
   };
@@ -582,17 +628,13 @@
 
       .button-group {
         .el-row {
-          margin-top: -30px;
-
           .el-col {
-            margin-top: 10px;
-
             ::v-deep(.el-upload) {
               width: 100%;
             }
 
             .el-button {
-              margin-top: 30px;
+              margin-bottom: 20px;
               width: 100%;
             }
           }
@@ -603,17 +645,14 @@
     .frame-main {
       .button-group {
         .el-row {
-          margin-top: -30px;
+          margin-top: 10px;
 
           .el-col {
-            margin-top: 10px;
-
             ::v-deep(.el-upload) {
               width: 100%;
             }
 
             .el-button {
-              margin-top: 30px;
               width: 100%;
             }
 

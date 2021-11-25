@@ -34,12 +34,12 @@
       ...mapState(['rightCollapse']),
       formStyle() {
         return {
-          marginRight: this.rightCollapse ? '-1000px' : '0',
+          marginRight: this.rightCollapse ? '-700px' : '0',
         };
       },
       frameStyle() {
         return {
-          marginRight: this.rightCollapse ? '-600px' : '0',
+          marginRight: this.rightCollapse ? '-350px' : '0',
         };
       },
     },
@@ -67,7 +67,7 @@
 
     .page-form {
       height: 100%;
-      width: 400px;
+      width: 350px;
       flex-shrink: 0;
       border-left: 1px solid $border-color;
       transition: all 0.3s;
@@ -75,7 +75,7 @@
 
     .page-frame {
       height: 100%;
-      width: 600px;
+      width: 350px;
       flex-shrink: 0;
       border-left: 1px solid $border-color;
       transition: all 0.3s;
