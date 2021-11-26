@@ -48,6 +48,14 @@
             <el-form-item label="颜色-调色板" class="form-items">
               <el-color-picker v-model="form.color" show-alpha />
             </el-form-item>
+            <el-form-item label="时长" class="form-items">
+              <el-input-number
+                v-model="currentFrame.frameTime"
+                :min="10"
+                :max="1000000"
+              />
+              <span class="tip">(豪秒)</span>
+            </el-form-item>
           </el-form>
 
           <div class="button-group">
@@ -118,9 +126,52 @@
           </el-form>
           <el-divider />
           <div class="button-group">
+            <el-form :model="form" label-width="auto" size="small">
+              <el-form-item
+                label="帧列表"
+                class="form-items"
+              >
+                <el-space :size="10" wrap>
+                  <el-check-tag
+                    v-for="(_, index) in frameLists"
+                    :key="'frame' + index"
+                    :checked="currentFrameIndex === index"
+                    @change="changeFrame(index)"
+                  >
+                    {{ 1 + index }}
+                  </el-check-tag>
+                </el-space>
+              </el-form-item>
+            </el-form>
             <el-row :gutter="10">
               <el-col :span="12">
-                <div style="padding-top: 10px;">数据</div>
+                <el-button size="medium" type="primary" @click="addFrame()">增加一帧</el-button>
+              </el-col>
+              <el-col :span="12">
+                <el-button size="medium" type="danger" @click="deleteFrame()">删除当前帧</el-button>
+              </el-col>
+            </el-row>
+            <el-row :gutter="10">
+              <el-col :span="12">
+                <el-button
+                  plain
+                  size="medium"
+                  type="primary"
+                  @click="playOneTime()"
+                >
+                  播放一次
+                </el-button>
+              </el-col>
+              <el-col :span="12">
+                <el-button
+                  plain
+                  disabled
+                  size="medium"
+                  type="primary"
+                  @click="playFrames(0)"
+                >
+                  循环播放
+                </el-button>
               </el-col>
             </el-row>
             <el-row :gutter="10">
@@ -131,42 +182,18 @@
                   accept="application/json"
                   :before-upload="importJson"
                 >
-                  <el-button plain size="medium">导入数据</el-button>
+                  <el-button plain disabled size="medium">导入数据</el-button>
                 </el-upload>
               </el-col>
               <el-col :span="12">
-                <el-button plain size="medium" @click="exportNewJson">导出数据</el-button>
-              </el-col>
-            </el-row>
-          </div>
-          <el-divider />
-          <el-form :model="form" label-width="auto" size="small">
-            <el-form-item
-              label="帧列表"
-              class="form-items"
-            >
-              <el-space :size="10" wrap>
-                <el-check-tag
-                  v-for="(_, index) in frameLists"
-                  :key="'frame' + index"
-                  :checked="form.currentFrameIndex === index"
-                  @change="changeFrame(index)"
+                <el-button
+                  plain
+                  disabled
+                  size="medium"
+                  @click="exportNewJson"
                 >
-                  {{ 1 + index }}
-                </el-check-tag>
-              </el-space>
-            </el-form-item>
-          </el-form>
-          <div class="button-group">
-            <el-row :gutter="10">
-              <el-col :span="6">
-                <el-button size="medium" type="primary" @click="palyFrames()">播放</el-button>
-              </el-col>
-              <el-col :span="8">
-                <el-button size="medium" type="primary" @click="addFrame()">增加一帧</el-button>
-              </el-col>
-              <el-col :span="10">
-                <el-button size="medium" type="danger" @click="deleteFrame(index)">删除当前帧</el-button>
+                  导出数据
+                </el-button>
               </el-col>
             </el-row>
           </div>
@@ -180,7 +207,8 @@
   import Page from '@/components/page/Page';
   import PageForm from '@/components/page/PageForm';
   import PageFrame from '@/components/page/PageFrame';
-  import { computed, getCurrentInstance, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue';
+  import { computed, getCurrentInstance, onBeforeUnmount, onMounted, reactive, ref, watch, watchEffect } from 'vue';
+  import { ElMessage } from 'element-plus';
   import html2canvas from 'html2canvas';
   import _ from 'lodash';
   import usePixel from './use-pixel';
@@ -209,18 +237,18 @@
         size: 5,
         side: 5,
         jsonData: '',
-        currentFrameIndex: 0,
       });
+      const currentFrameIndex = ref(0);
       const frameLists = ref([ // 帧列表
         {
           color: [0,0,0,0],
-          frameTime: 0,
+          frameTime: 1000,
           dotList: [],
         },
       ]);
       const currentFrame = ref( {
         color: [0,0,0,0],
-        frameTime: 0,
+        frameTime: 1000,
         dotList: [],
       }); // 当前帧
       const historyList = ref([]);
@@ -251,6 +279,8 @@
       });
 
       const createDotList = () => {
+        console.log('createDotList go');
+        // console.log('createDotList currentFrame.dotList:'+currentFrame.value.dotList);
         const pixelX = form.widthPixel;
         const pixelY = form.heightPixel;
         const defaultColor = [255, 255, 255, 0];
@@ -278,6 +308,7 @@
             addDot(rowIndex, colIndex, col);
           });
         });
+        console.log('renderCanvas end');
       };
 
       // 鼠标移动光标
@@ -543,12 +574,10 @@
 
       // 帧处理相关
       const changeFrame = index => {
-        frameLists.value[form.currentFrameIndex] = currentFrame.value;
-        form.currentFrameIndex = index;
+        frameLists.value[currentFrameIndex.value] = currentFrame.value;
+        currentFrameIndex.value = index;
         currentFrame.value = frameLists.value[index];
-      }
-      // 播放帧动画
-      const playFrames = () => {
+        createDotList();
       }
       // 增加帧
       const addFrame = () => {
@@ -559,12 +588,80 @@
         })
       }
       // 删除帧
-      const deleteFrames = index => {
+      const deleteFrame = () => {
+        let fLenght = frameLists.value.length;
+        if (fLenght == 1){
+          ElMessage({
+            message: '只有一帧不能删除!',
+            type: 'warning',
+          })
+          return
+        }
+        frameLists.value.splice(currentFrameIndex.value,1);
+        if (currentFrameIndex.value == (fLenght - 1)){ // 最后一个索引时处理索引
+          currentFrameIndex.value = currentFrameIndex.value - 1;
+          currentFrame.value = frameLists.value[ currentFrameIndex.value ];
+        }else{// 非最后一个索引时，索引值没变化，需要手动刷新canvas
+          currentFrame.value = frameLists.value[currentFrameIndex.value];
+          createDotList();
+        }
+      }
+      // 播放帧动画
+      /*
+      const playFrames = t => {
+        frameLists.value[currentFrameIndex.value] = currentFrame.value; // 存储当前帧
+        if (t == 0){// 循环播放
+
+        }else{// 播放一次
+          frameLists.value.forEach((frame,index) => {
+            currentFrameIndex.value = index;
+            currentFrame.value = frameLists.value[index];
+          });
+        };
+      }
+      */
+
+      // 播放一次
+      const playOneTime = () => {
+        console.log('playOneTime form.currentFrameIndex:' + currentFrameIndex.value);
+        frameLists.value[currentFrameIndex.value] = currentFrame.value;// 存储当前帧
+        frameLists.value.forEach((frame,findex) => {
+          let frameTime = 0;
+          if (findex !== 0){
+            frameTime = frame.frameTime;
+          }
+          playFrame(findex);
+          // setTimeout(console.log(1),10000)
+          // var s = setInterval(() => {
+          //  playFrame(findex);
+          // }, 10000);
+
+          // clearInterval(s)
+          sleep(frameTime,findex);
+        });
+        // clearInterval(s)
+      }
+
+      // 播放一帧
+      const playFrame = index => {
+        console.log('playFrame index:' + index);
+        currentFrameIndex.value = index;
+        currentFrame.value = frameLists.value[index];
+        createDotList();
+      }
+
+      // 每帧持续时长
+      const sleep = (ms,sindex) => {
+        console.log('sleep ms:' + ms);
+        console.log('sleep sindex:' + sindex);
+        let t = Date.now();
+        while(Date.now() - t <= ms){
+        }
       }
 
       watch(() => {
-        const { heightPixel, widthPixel, shape, monochrome, grid, size, side, currentFrameIndex } = form;
-        return { heightPixel, widthPixel, shape, monochrome, grid, size, side, currentFrameIndex };
+        const { heightPixel, widthPixel, shape, monochrome, grid, size, side } = form;
+        return { heightPixel, widthPixel, shape, monochrome, grid, size, side };
       }, () => {
         createDotList();
       });
@@ -582,6 +679,7 @@
         hoverContext,
         form,
         currentFrame,
+        currentFrameIndex,
         frameLists,
         historyList,
         changeType,
@@ -595,9 +693,12 @@
         getNewJson,
         exportNewJson,
         changeFrame,
-        playFrames,
         addFrame,
-        deleteFrames,
+        deleteFrame,
+        // playFrames,
+        playOneTime,
+        playFrame,
+        sleep,
       };
     },
   };
