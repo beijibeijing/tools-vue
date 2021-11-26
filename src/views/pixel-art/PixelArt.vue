@@ -61,12 +61,38 @@
           <div class="button-group">
             <el-row :gutter="10">
               <el-col :span="24">
-                <el-button type="primary" size="medium" @click="exportImage">导出图片</el-button>
+                <el-button
+                  plain
+                  type="primary"
+                  ize="medium"
+                  @click="exportImage"
+                >
+                  导出图片
+                </el-button>
               </el-col>
             </el-row>
             <el-row :gutter="10">
               <el-col :span="24">
-                <el-button type="primary" size="medium" @click="getNewJson">生成数据</el-button>
+                <el-button
+                  plain
+                  type="primary"
+                  ize="medium"
+                  @click="getNewJson"
+                >
+                  导出数据
+                </el-button>
+              </el-col>
+            </el-row>
+            <el-row :gutter="10">
+              <el-col :span="24">
+                <el-button
+                  plain
+                  type="primary"
+                  ize="medium"
+                  @click="getNewJson"
+                >
+                  查看数据
+                </el-button>
               </el-col>
             </el-row>
             <el-row :gutter="10">
@@ -157,20 +183,19 @@
                   plain
                   size="medium"
                   type="primary"
-                  @click="playOneTime()"
+                  @click="playFrames(1)"
                 >
-                  播放一次
+                  {{ buttonPlayLabel1 }}
                 </el-button>
               </el-col>
               <el-col :span="12">
                 <el-button
                   plain
-                  disabled
                   size="medium"
                   type="primary"
                   @click="playFrames(0)"
                 >
-                  循环播放
+                  {{ buttonPlayLabel0 }}
                 </el-button>
               </el-col>
             </el-row>
@@ -241,16 +266,19 @@
       const currentFrameIndex = ref(0);
       const frameLists = ref([ // 帧列表
         {
-          color: [0,0,0,0],
+          color: [0,0,0,0], // 单色模式使用
           frameTime: 1000,
           dotList: [],
         },
       ]);
       const currentFrame = ref( {
-        color: [0,0,0,0],
+        color: [0,0,0,0], // 单色模式使用
         frameTime: 1000,
         dotList: [],
       }); // 当前帧
+      const buttonPlayLabel0 = ref('循环播放');
+      const buttonPlayLabel1 = ref('播放一次');
+      const playStatus = ref(0); // 0 未播放 1 播放一次播放中 2 循环播放播放中
       const historyList = ref([]);
       const downDot = ref({}); // 鼠标按下的点
       const lastDot = ref({}); // 上一个移动的点
@@ -279,8 +307,6 @@
       });
 
       const createDotList = () => {
-        console.log('createDotList go');
-        // console.log('createDotList currentFrame.dotList:'+currentFrame.value.dotList);
         const pixelX = form.widthPixel;
         const pixelY = form.heightPixel;
         const defaultColor = [255, 255, 255, 0];
@@ -308,7 +334,6 @@
             addDot(rowIndex, colIndex, col);
           });
         });
-        console.log('renderCanvas end');
       };
 
       // 鼠标移动光标
@@ -395,6 +420,7 @@
       // beiji 使用与预制色修改
       const changeColor = color => {
         form.color = color;
+        currentFrame.value.color = color;
       };
 
       const clearPixelArt = () => {
@@ -478,6 +504,7 @@
         }
       };
 
+      // 原导入数据
       const importJson = file => {
         let reader = new FileReader();
         reader.readAsText(file);
@@ -498,11 +525,9 @@
         // let data = JSON.stringify({
         //  dotList: dotList.value,
         // });
-        let data = '0x66 0x88 0x01 0xb4'; // 协议头 字段类型 数组
+        let data = '66880101'; // 66 协议头 88 协议头 01 类型 01 组(组暂时没起作用)
         currentFrame.value.dotList.forEach((row, rowIndex) => {
           row.forEach((col, colIndex) => {
-            // console.log('col:' + col);
-            // console.log('col is' + typeof(col));
             let dColor = '';
             let colString = col.toString()
             switch(colString){
@@ -552,6 +577,7 @@
         proxy.downloadBlob(blob, '像素编辑');
       };
 
+      // 原输出数据
       const exportJson = () => {
         let data = JSON.stringify({
           form,
@@ -561,6 +587,7 @@
         proxy.downloadBlob(blob, '像素编辑');
       };
 
+      // 导出图片
       const exportImage = () => {
         let element = document.querySelector('.pixel-art');
         html2canvas(element, {
@@ -606,57 +633,63 @@
           createDotList();
         }
       }
+
       // 播放帧动画
-      /*
-      const playFrames = t => {
-        frameLists.value[currentFrameIndex.value] = currentFrame.value; // 存储当前帧
-        if (t == 0){// 循环播放
-
-        }else{// 播放一次
-          frameLists.value.forEach((frame,index) => {
-            currentFrameIndex.value = index;
-            currentFrame.value = frameLists.value[index];
-          });
-        };
-      }
-      */
-
-      // 播放一次
-      const playOneTime = () => {
-        console.log('playOneTime form.currentFrameIndex:' + currentFrameIndex.value);
-        frameLists.value[currentFrameIndex.value] = currentFrame.value;// 存储当前帧
-        frameLists.value.forEach((frame,findex) => {
-          let frameTime = 0;
-          if (findex !== 0){
-            frameTime = frame.frameTime;
+      // todo 状态更新待抽象
+      const playFrames = ptimes => {
+        switch (playStatus.value){
+        case 0: // 未播放
+          frameLists.value[currentFrameIndex.value] = currentFrame.value;// 存储当前帧
+          buttonPlayLabel0.value = '停止播放'; // 按钮文字
+          buttonPlayLabel1.value = '停止播放'; // 按钮文字
+          switch (ptimes){
+          case 0: // 循环播放
+            playStatus.value = 2; // 更新播放状态
+            break;
+          case 1: // 播放一次
+            playStatus.value = 1; // 更新播放状态
+            break;
           }
-          playFrame(findex);
-          // setTimeout(console.log(1),10000)
-          // var s = setInterval(() => {
-          //  playFrame(findex);
-          // }, 10000);
-
-          // clearInterval(s)
-          sleep(frameTime,findex);
-        });
-        // clearInterval(s)
+          // 递归播放
+          const _play = (values, index = 0) => {
+            const frame = values[index];
+            playFrame(index).then(() => {
+              let nextIndex = index + 1;
+              if ((nextIndex === values.length && ptimes === 1) || playStatus.value ===0) {// 播放一次到最后一帧 或停止播放
+                console.log(/播放完毕/);
+                buttonPlayLabel0.value = '循环播放'; // 按钮文字
+                buttonPlayLabel1.value = '播放一次'; // 按钮文字
+                playStatus.value = 0; // 更新播放状态
+              } else {
+                if (nextIndex === values.length){ // 循环播放到最后一帧
+                  nextIndex = 0;
+                }
+                setTimeout(() => {
+                  _play(frameLists.value, nextIndex)
+                }, frame.frameTime);
+              }
+            })
+          }
+          _play(frameLists.value);
+          break;
+        case 1:
+        case 2: // 播放中
+          buttonPlayLabel0.value = '循环播放'; // 按钮文字
+          buttonPlayLabel1.value = '播放一次'; // 按钮文字
+          playStatus.value = 0; // 更新播放状态
+          break;
+        }
       }
 
       // 播放一帧
       const playFrame = index => {
-        console.log('playFrame index:' + index);
-        currentFrameIndex.value = index;
-        currentFrame.value = frameLists.value[index];
-        createDotList();
-      }
-
-      // 每帧持续时长
-      const sleep = (ms,sindex) => {
-        console.log('sleep ms:' + ms);
-        console.log('sleep sindex:' + sindex);
-        let t = Date.now();
-        while(Date.now() - t <= ms){
-        }
+        return new Promise(res => {
+          console.log(/playFrame index:/, index);
+          currentFrameIndex.value = index;
+          currentFrame.value = frameLists.value[index];
+          createDotList();
+          res()
+        })
       }
 
       watch(() => {
@@ -679,6 +712,8 @@
         hoverContext,
         form,
         currentFrame,
+        buttonPlayLabel0,
+        buttonPlayLabel1,
         currentFrameIndex,
         frameLists,
         historyList,
@@ -695,10 +730,7 @@
         changeFrame,
         addFrame,
         deleteFrame,
-        // playFrames,
-        playOneTime,
-        playFrame,
-        sleep,
+        playFrames,
       };
     },
   };
