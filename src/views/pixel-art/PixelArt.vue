@@ -62,17 +62,43 @@
                 :min="1"
                 :max="256"
               />
-              <span class="tip">(豪秒)</span>
+              <span class="tip">(毫秒)</span>
             </el-form-item>
           </el-form>
 
           <div class="button-group">
             <el-row :gutter="10">
+              <el-button
+                :icon="CaretLeft"
+                circle
+                type="primary"
+                @click="caretLeft"
+              />
+              <el-button
+                :icon="CaretRight"
+                circle
+                type="primary"
+                @click="caretRight"
+              />
+              <el-button
+                :icon="CaretTop"
+                circle
+                type="primary"
+                @click="caretTop"
+              />
+              <el-button
+                :icon="CaretBottom"
+                circle
+                type="primary"
+                @click="caretBottom"
+              />
+            </el-row>
+            <el-row :gutter="10">
               <el-col :span="24">
                 <el-button
                   plain
                   type="primary"
-                  ize="medium"
+                  size="medium"
                   @click="exportImage"
                 >
                   导出图片
@@ -85,7 +111,7 @@
                   disabled
                   plain
                   type="primary"
-                  ize="medium"
+                  size="medium"
                   @click="getNewJson"
                 >
                   导出数据
@@ -98,7 +124,7 @@
                   disabled
                   plain
                   type="primary"
-                  ize="medium"
+                  size="medium"
                   @click="getNewJson"
                 >
                   查看数据
@@ -241,8 +267,9 @@
   import Page from '@/components/page/Page';
   import PageForm from '@/components/page/PageForm';
   import PageFrame from '@/components/page/PageFrame';
-  import { computed, getCurrentInstance, onBeforeUnmount, onMounted, reactive, ref, watch, watchEffect } from 'vue';
+  import { computed, getCurrentInstance, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue';
   import { ElMessage } from 'element-plus';
+  import { CaretLeft, CaretTop, CaretBottom, CaretRight }from '@element-plus/icons';
   import html2canvas from 'html2canvas';
   import _ from 'lodash';
   import usePixel from './use-pixel';
@@ -753,6 +780,19 @@
         })
       }
 
+      // 帧移动处理
+      const caretLeft = () => {
+      }
+
+      const caretRight = () => {
+      }
+
+      const caretTop = () => {
+      }
+
+      const caretBottom = () => {
+      }
+
       watch(() => {
         const { heightPixel, widthPixel, shape, monochrome, grid, size, side } = form;
         return { heightPixel, widthPixel, shape, monochrome, grid, size, side };
@@ -778,6 +818,10 @@
         currentFrameIndex,
         frameLists,
         historyList,
+        CaretLeft,
+        CaretRight,
+        CaretTop,
+        CaretBottom,
         changeType,
         clearPixelArt,
         undoHistory,
@@ -822,13 +866,14 @@
 
       .button-group {
         .el-row {
+          margin-bottom: 10px;
           .el-col {
             ::v-deep(.el-upload) {
               width: 100%;
             }
 
             .el-button {
-              margin-bottom: 20px;
+              margin-bottom: 10px;
               width: 100%;
             }
           }
