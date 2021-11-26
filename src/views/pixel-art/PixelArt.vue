@@ -34,6 +34,7 @@
             </el-form-item>
             <el-form-item label="颜色-预制" class="form-items">
               <el-space :size="10" wrap>
+                <!--
                 <el-check-tag :checked="form.color === 'rgba(255,0,0,1)'" @change="changeColor('rgba(255,0,0,1)')">红</el-check-tag>
                 <el-check-tag :checked="form.color === 'rgba(255,255,0,1)'" @change="changeColor('rgba(255,255,0,1)')">黄</el-check-tag>
                 <el-check-tag :checked="form.color === 'rgba(0,255,0,1)'" @change="changeColor('rgba(0,255,0,1)')">绿</el-check-tag>
@@ -43,6 +44,13 @@
                 <el-check-tag :checked="form.color === 'rgba(0,0,0,1)'" @change="changeColor('rgba(0,0,0,1)')">黑</el-check-tag>
                 <el-check-tag :checked="form.color === 'rgba(255,255,255,1)'" @change="changeColor('rgba(255,255,255,1)')">白</el-check-tag>
                 <el-check-tag :checked="form.color === 'rgba(0,0,0,0)'" @change="changeColor('rgba(0,0,0,0)')">不亮</el-check-tag>
+                -->
+                <el-check-tag :checked="form.color === 'rgba(255,0,0,1)'" @change="changeColor('rgba(255,0,0,1)')">红</el-check-tag>
+                <el-check-tag :checked="form.color === 'rgba(255,255,0,1)'" @change="changeColor('rgba(255,255,0,1)')">黄</el-check-tag>
+                <el-check-tag :checked="form.color === 'rgba(0,255,0,1)'" @change="changeColor('rgba(0,255,0,1)')">绿</el-check-tag>
+                <el-check-tag :checked="form.color === 'rgba(0,255,255,1)'" @change="changeColor('rgba(0,255,255,1)')">青</el-check-tag>
+                <el-check-tag :checked="form.color === 'rgba(0,0,255,1)'" @change="changeColor('rgba(0,0,255,1)')">蓝</el-check-tag>
+                <el-check-tag :checked="form.color === 'rgba(255,255,255,1)'" @change="changeColor('rgba(255,255,255,1)')">不亮</el-check-tag>
               </el-space>
             </el-form-item>
             <el-form-item label="颜色-调色板" class="form-items">
@@ -51,8 +59,8 @@
             <el-form-item label="时长" class="form-items">
               <el-input-number
                 v-model="currentFrame.frameTime"
-                :min="10"
-                :max="1000000"
+                :min="1"
+                :max="256"
               />
               <span class="tip">(豪秒)</span>
             </el-form-item>
@@ -74,6 +82,7 @@
             <el-row :gutter="10">
               <el-col :span="24">
                 <el-button
+                  disabled
                   plain
                   type="primary"
                   ize="medium"
@@ -86,6 +95,7 @@
             <el-row :gutter="10">
               <el-col :span="24">
                 <el-button
+                  disabled
                   plain
                   type="primary"
                   ize="medium"
@@ -213,9 +223,8 @@
               <el-col :span="12">
                 <el-button
                   plain
-                  disabled
                   size="medium"
-                  @click="exportNewJson"
+                  @click="exportTmpJson"
                 >
                   导出数据
                 </el-button>
@@ -256,7 +265,8 @@
         widthPixel: 36,
         type: 'pencil',
         shape: 'square',
-        color: 'rgba(0,0,0,0)', // 不亮,默认颜色或整体颜色
+        color: 'rgba(255,255,255,1)', // 白色表示不亮
+        // color: 'rgba(0,0,0,0)', // 不亮,默认颜色或整体颜色
         monochrome: false,
         grid: true,
         size: 5,
@@ -267,18 +277,19 @@
       const frameLists = ref([ // 帧列表
         {
           color: [0,0,0,0], // 单色模式使用
-          frameTime: 1000,
+          frameTime: 1, // 临时是秒
           dotList: [],
         },
       ]);
       const currentFrame = ref( {
         color: [0,0,0,0], // 单色模式使用
-        frameTime: 1000,
+        frameTime: 1,
         dotList: [],
       }); // 当前帧
       const buttonPlayLabel0 = ref('循环播放');
       const buttonPlayLabel1 = ref('播放一次');
       const playStatus = ref(0); // 0 未播放 1 播放一次播放中 2 循环播放播放中
+      const defaultColor = [255, 255, 255, 1]; // 白色默认不亮
       const historyList = ref([]);
       const downDot = ref({}); // 鼠标按下的点
       const lastDot = ref({}); // 上一个移动的点
@@ -309,7 +320,7 @@
       const createDotList = () => {
         const pixelX = form.widthPixel;
         const pixelY = form.heightPixel;
-        const defaultColor = [255, 255, 255, 0];
+        // const defaultColor = [255, 255, 255, 0];
 
         const list = new Array(pixelY).fill(null).map(() => new Array(pixelX).fill(defaultColor));
         list.forEach((row, rowIndex) => {
@@ -521,11 +532,59 @@
       };
 
       // beiji 生成json
-      const createRGBJson = () => {
+      const createTmpJson = () => {
         // let data = JSON.stringify({
         //  dotList: dotList.value,
         // });
         let data = '66880101'; // 66 协议头 88 协议头 01 类型 01 组(组暂时没起作用)
+        data = data +'0' + frameLists.value.length.toString(); // 目前最多4帧 01红 02绿  04青 05黄 07蓝
+        let color = ''; // 颜色数据
+        let frameTime = ''; // 时间数据
+        let timeType = ''; // 时间类型
+        frameLists.value.forEach((fvalue,findex) => {
+          // 解决一个图形的颜色、时间
+          let fcolString = fvalue.color.toString();
+          switch(fcolString){
+          case '255,0,0,1': // 红
+            color = color + '01';
+            break;
+          case '255,255,0,1': // 黄
+            color = color + '05';
+            break;
+          case '0,255,0,1': // 绿
+            color = color + '02';
+            break;
+          case '0,255,255,1': // 青
+            color = color + '04';
+            break;
+          case '0,0,255,1': // 蓝
+            color = color + '07';
+            break;
+          }
+          frameTime = frameTime + fvalue.frameTime.toString(16); // 要十六机制
+          timeType = timeType+'01'// 01是秒 00是毫秒 临时都是秒
+          // 转换一列灯珠数据
+          let colData = ['','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','']; // 36列二进制字符串 每个5位
+          fvalue.dotList.forEach((row, rowIndex) => { // 5行
+            row.forEach((col, colIndex) => { // 36列
+              if (col.toString() === '255,255,255,1'){ // 临时白表示不亮
+                colData[colIndex] = colData[colIndex] + '0';
+              }else{
+                colData[colIndex] = colData[colIndex] + '1';
+              }
+            })
+          });
+          colData.forEach( (cValue, cIndex) => { // 36列二进制转十六进制
+            console.log('cIndex:'+cIndex);
+            console.log('colValue:'+cValue);
+            let s16 = parseInt(cValue,2).toString(16);// 2转10再转16
+            if (s16.length < 2){
+              s16 = '0' + s16; // 不够两位补一位0
+            }
+            data = data + s16;
+          })
+        });
+        /*
         currentFrame.value.dotList.forEach((row, rowIndex) => {
           row.forEach((col, colIndex) => {
             let dColor = '';
@@ -561,18 +620,20 @@
             data = data + ' ' + dColor;
           });
         });
-        data = data + ' 0x01 0x08 0x05';// 豪秒 校验位 校验位
+        */
+        data = data + color + frameTime + timeType + '0805';// 08 校验位 05 校验位
         return data;
       }
 
       // beiji 获取json
       const getNewJson = () => {
-        form.jsonData = createRGBJson();
+        form.jsonData = createTmpJson();
       }
 
       // beiji 输出json
-      const exportNewJson = () => {
-        let data = createRGBJson();
+      const exportTmpJson = () => {
+        frameLists.value[currentFrameIndex.value] = currentFrame.value;// 存储当前帧
+        let data = createTmpJson();
         let blob = new Blob([data], { type: 'application/json' });
         proxy.downloadBlob(blob, '像素编辑');
       };
@@ -666,7 +727,7 @@
                 }
                 setTimeout(() => {
                   _play(frameLists.value, nextIndex)
-                }, frame.frameTime);
+                }, frame.frameTime * 1000);// 临时是秒
               }
             })
           }
@@ -724,9 +785,9 @@
         exportJson,
         exportImage,
         changeColor,
-        createRGBJson,
+        createTmpJson,
         getNewJson,
-        exportNewJson,
+        exportTmpJson,
         changeFrame,
         addFrame,
         deleteFrame,
