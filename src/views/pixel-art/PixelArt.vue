@@ -62,7 +62,7 @@
                 :min="1"
                 :max="256"
               />
-              <span class="tip">(毫秒)</span>
+              <span class="tip">(暂时是秒/以后会是毫秒)</span>
             </el-form-item>
           </el-form>
 
@@ -588,8 +588,12 @@
             color = color + '07';
             break;
           }
-          frameTime = frameTime + fvalue.frameTime.toString(16); // 要十六机制
-          timeType = timeType+'01'// 01是秒 00是毫秒 临时都是秒
+          let ft16 = fvalue.frameTime.toString(16); // 十六机制
+          if (ft16.length < 2){
+            ft16 = '0' + ft16; // 不够两位补一位0
+          }
+          frameTime = frameTime + ft16; // 要十六机制
+          timeType = timeType + '01'// 01是秒 00是毫秒 临时都是秒
           // 转换一列灯珠数据
           let colData = ['','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','']; // 36列二进制字符串 每个5位
           fvalue.dotList.forEach((row, rowIndex) => { // 5行
