@@ -595,7 +595,8 @@
           frameTime = frameTime + ft16; // 要十六机制
           timeType = timeType + '01'// 01是秒 00是毫秒 临时都是秒
           // 转换一列灯珠数据
-          let colData = ['','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','']; // 36列二进制字符串 每个5位
+          let colData = new Array(36); // 36列二进制字符串 每个5位
+          colData.fill('');
           fvalue.dotList.forEach((row, rowIndex) => { // 5行
             row.forEach((col, colIndex) => { // 36列
               if (col.toString() === '255,255,255,1'){ // 临时白表示不亮
@@ -786,15 +787,31 @@
 
       // 帧移动处理
       const caretLeft = () => {
+        currentFrame.value.dotList.forEach((row, rowIndex) => { // 5行
+          let first = currentFrame.value.dotList[rowIndex].shift();
+          currentFrame.value.dotList[rowIndex].push(first);
+        });
+        createDotList();
       }
 
       const caretRight = () => {
+        currentFrame.value.dotList.forEach((row, rowIndex) => { // 5行
+          let last = currentFrame.value.dotList[rowIndex].pop();
+          currentFrame.value.dotList[rowIndex].splice(0,0,last);
+        });
+        createDotList();
       }
 
       const caretTop = () => {
+        let first = currentFrame.value.dotList.shift();
+        currentFrame.value.dotList.push(first);
+        createDotList();
       }
 
       const caretBottom = () => {
+        let last = currentFrame.value.dotList.pop();
+        currentFrame.value.dotList.splice(0,0,last);
+        createDotList();
       }
 
       watch(() => {
@@ -840,6 +857,10 @@
         addFrame,
         deleteFrame,
         playFrames,
+        caretLeft,
+        caretRight,
+        caretTop,
+        caretBottom,
       };
     },
   };
