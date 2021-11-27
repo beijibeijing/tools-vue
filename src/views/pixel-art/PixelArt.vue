@@ -55,6 +55,14 @@
             </el-form-item>
             <el-form-item label="颜色-调色板" class="form-items">
               <el-color-picker v-model="form.color" show-alpha />
+              <el-button
+                plain
+                type="primary"
+                style="margin-left: 10px;"
+                @click="allReplaceColor"
+              >
+                全部替换此色
+              </el-button>
             </el-form-item>
             <el-form-item label="时长" class="form-items">
               <el-input-number
@@ -170,6 +178,9 @@
               />
               <span class="tip">(像素)</span>
             </el-form-item>
+            <el-form-item label="缩放(像素)" class="form-items">
+              <el-slider v-model="form.size" :min="1" :max="80" />
+            </el-form-item>
             <el-form-item label="形状" class="form-items">
               <el-radio-group v-model="form.shape">
                 <el-radio-button label="square">方形</el-radio-button>
@@ -181,9 +192,6 @@
             </el-form-item>
             <el-form-item label="网格" class="form-items">
               <el-switch v-model="form.grid" />
-            </el-form-item>
-            <el-form-item label="缩放(像素)" class="form-items">
-              <el-slider v-model="form.size" :min="1" :max="100" />
             </el-form-item>
           </el-form>
           <el-divider />
@@ -206,11 +214,14 @@
               </el-form-item>
             </el-form>
             <el-row :gutter="10">
-              <el-col :span="12">
-                <el-button size="medium" type="primary" @click="addFrame()">增加一帧</el-button>
+              <el-col :span="8">
+                <el-button size="small" type="primary" @click="addBlankFrame()">插入空白帧</el-button>
               </el-col>
-              <el-col :span="12">
-                <el-button size="medium" type="danger" @click="deleteFrame()">删除当前帧</el-button>
+              <el-col :span="8">
+                <el-button size="small" type="primary" @click="addCopyFrame()">复制当前帧</el-button>
+              </el-col>
+              <el-col :span="8">
+                <el-button size="small" type="danger" @click="deleteFrame()">删除当前帧</el-button>
               </el-col>
             </el-row>
             <el-row :gutter="10">
@@ -273,6 +284,7 @@
   import html2canvas from 'html2canvas';
   import _ from 'lodash';
   import usePixel from './use-pixel';
+  import { colorToArray } from '@/utils';
 
   export default {
     name: 'PixelArt',
@@ -460,6 +472,19 @@
         form.color = color;
         currentFrame.value.color = color;
       };
+
+      const allReplaceColor = () => {
+        let color = colorToArray(form.color, true);
+        let dColor = colorToArray(defaultColor, true);
+        currentFrame.value.dotList.forEach((row, rowIndex) => { // 5行
+          row.forEach((col, colIndex) => { // 36列
+            if (col.toString() !== color.toString() && col.toString() !== dColor.toString()){ // 临时白表示不亮
+              currentFrame.value.dotList[rowIndex][colIndex] = color;
+            }
+          })
+        });
+        createDotList();
+      }
 
       const clearPixelArt = () => {
         currentFrame.value.dotList = [];
@@ -694,19 +719,36 @@
 
       // 帧处理相关
       const changeFrame = index => {
-        frameLists.value[currentFrameIndex.value] = currentFrame.value;
+        frameLists.value[currentFrameIndex.value] = currentFrame.value; // 存储当前帧
         currentFrameIndex.value = index;
         currentFrame.value = frameLists.value[index];
         createDotList();
       }
-      // 增加帧
-      const addFrame = () => {
-        frameLists.value.push({
+
+      // 增加空白帧
+      const addBlankFrame = () => {
+        frameLists.value[currentFrameIndex.value] = currentFrame.value; // 存储当前帧
+        let newFrame
+        frameLists.value.splice(currentFrameIndex.value + 1, 0, {
           color: [0,0,0,0],
           frameTime: 0,
           dotList: [],
-        })
+        });
+        currentFrameIndex.value = currentFrameIndex.value + 1;
+        currentFrame.value = frameLists.value[currentFrameIndex.value];
+        createDotList();
       }
+
+      // 增加复制帧
+      const addCopyFrame = () => {
+        frameLists.value[currentFrameIndex.value] = currentFrame.value; // 存储当前帧
+        let newFrame
+        frameLists.value.splice(currentFrameIndex.value + 1, 0, frameLists.value[currentFrameIndex.value]);
+        currentFrameIndex.value = currentFrameIndex.value + 1;
+        currentFrame.value = frameLists.value[currentFrameIndex.value];
+        createDotList();
+      }
+
       // 删除帧
       const deleteFrame = () => {
         let fLenght = frameLists.value.length;
@@ -850,11 +892,13 @@
         exportJson,
         exportImage,
         changeColor,
+        allReplaceColor,
         createTmpJson,
         getNewJson,
         exportTmpJson,
         changeFrame,
-        addFrame,
+        addBlankFrame,
+        addCopyFrame,
         deleteFrame,
         playFrames,
         caretLeft,
