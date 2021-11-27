@@ -595,21 +595,23 @@
         let timeType = ''; // 时间类型
         frameLists.value.forEach((fvalue,findex) => {
           // 解决一个图形的颜色、时间
-          let fcolString = fvalue.color.toString();
+          console.log('fvalue.color:'+fvalue.color);
+          let fcolString = colorToArray(fvalue.color).toString();
+          console.log('fcolString:'+fcolString);
           switch(fcolString){
-          case '255,0,0,1': // 红
+          case '255,0,0': // 红
             color = color + '01';
             break;
-          case '255,255,0,1': // 黄
+          case '255,255,0': // 黄
             color = color + '05';
             break;
-          case '0,255,0,1': // 绿
+          case '0,255,0': // 绿
             color = color + '02';
             break;
-          case '0,255,255,1': // 青
+          case '0,255,255': // 青
             color = color + '04';
             break;
-          case '0,0,255,1': // 蓝
+          case '0,0,255': // 蓝
             color = color + '07';
             break;
           }
@@ -632,8 +634,6 @@
             })
           });
           colData.forEach( (cValue, cIndex) => { // 36列二进制转十六进制
-            console.log('cIndex:'+cIndex);
-            console.log('colValue:'+cValue);
             let s16 = parseInt(cValue,2).toString(16);// 2转10再转16
             if (s16.length < 2){
               s16 = '0' + s16; // 不够两位补一位0
@@ -742,8 +742,12 @@
       // 增加复制帧
       const addCopyFrame = () => {
         frameLists.value[currentFrameIndex.value] = currentFrame.value; // 存储当前帧
-        let newFrame
-        frameLists.value.splice(currentFrameIndex.value + 1, 0, frameLists.value[currentFrameIndex.value]);
+        let newFrame = {
+          color: frameLists.value[currentFrameIndex.value].color,
+          frameTime: frameLists.value[currentFrameIndex.value].frameTime,
+          dotList: frameLists.value[currentFrameIndex.value].dotList,
+        };
+        frameLists.value.splice(currentFrameIndex.value + 1, 0,newFrame);
         currentFrameIndex.value = currentFrameIndex.value + 1;
         currentFrame.value = frameLists.value[currentFrameIndex.value];
         createDotList();
