@@ -50,7 +50,7 @@
                 <el-check-tag :checked="form.color === 'rgba(0,255,0,1)'" @change="changeColor('rgba(0,255,0,1)')">绿</el-check-tag>
                 <el-check-tag :checked="form.color === 'rgba(0,255,255,1)'" @change="changeColor('rgba(0,255,255,1)')">青</el-check-tag>
                 <el-check-tag :checked="form.color === 'rgba(0,0,255,1)'" @change="changeColor('rgba(0,0,255,1)')">蓝</el-check-tag>
-                <el-check-tag :checked="form.color === 'rgba(255,255,255,1)'" @change="changeColor('rgba(255,255,255,1)')">不亮</el-check-tag>
+                <el-check-tag :checked="form.color === defaultColorS1" @change="changeColor(defaultColorS1)">不亮</el-check-tag>
               </el-space>
             </el-form-item>
             <el-form-item label="颜色-调色板" class="form-items">
@@ -68,9 +68,9 @@
               <el-input-number
                 v-model="currentFrame.frameTime"
                 :min="1"
-                :max="256"
+                :max="5000"
               />
-              <span class="tip">(暂时是秒/以后会是毫秒)</span>
+              <span class="tip">(毫秒)</span>
             </el-form-item>
           </el-form>
 
@@ -304,7 +304,7 @@
         widthPixel: 36,
         type: 'pencil',
         shape: 'square',
-        color: 'rgba(255,255,255,1)', // 白色表示不亮
+        color: 'rgba(5,5,5,1)', // 默认色表示不亮
         // color: 'rgba(0,0,0,0)', // 不亮,默认颜色或整体颜色
         monochrome: false,
         grid: true,
@@ -316,7 +316,7 @@
       const frameLists = ref([ // 帧列表
         {
           color: [0,0,0,0], // 单色模式使用
-          frameTime: 1, // 临时是秒
+          frameTime: 1, // 毫秒
           dotList: [],
         },
       ]);
@@ -328,7 +328,9 @@
       const buttonPlayLabel0 = ref('循环播放');
       const buttonPlayLabel1 = ref('播放一次');
       const playStatus = ref(0); // 0 未播放 1 播放一次播放中 2 循环播放播放中
-      const defaultColor = [255, 255, 255, 1]; // 白色默认不亮
+      const defaultColor = [5, 5, 5, 1]; // 默认不亮色
+      const defaultColorS1 = 'rgba(5,5,5,1)'; // 默认不亮色
+      const defaultColorS2 = '5,5,5,1'; // 默认不亮色
       const historyList = ref([]);
       const downDot = ref({}); // 鼠标按下的点
       const lastDot = ref({}); // 上一个移动的点
@@ -583,21 +585,44 @@
         });
       };
 
+      // 十六进制补位
+      const fillUp16 = s16 => {
+        let sLength = s16.length;
+        let fillUpS = '';
+        switch (sLength){
+        case 0:
+          fillUpS = '00';
+          break;
+        case 1:
+          fillUpS = '0' + s16;
+          break;
+        case 2:
+          fillUpS = s16;
+          break;
+        default:
+          ElMessage({
+            message: '16进制补位超出两位',
+            type: 'warning',
+          })
+          fillUpS = 'xx';
+        }
+        return fillUpS;
+      }
+
       // beiji 生成json
       const createTmpJson = () => {
-        // let data = JSON.stringify({
-        //  dotList: dotList.value,
-        // });
-        let data = '66880101'; // 66 协议头 88 协议头 01 类型 01 组(组暂时没起作用)
-        data = data +'0' + frameLists.value.length.toString(); // 目前最多4帧 01红 02绿  04青 05黄 07蓝
+        let data = '';
+        let fData = '668801'; // 66 协议头 88 协议头 01 类型
+        fData = fData + fillUp16(Math.ceil(frameLists.value.length/4).toString(16)); // 4个图案一组
         let color = ''; // 颜色数据
         let frameTime = ''; // 时间数据
-        let timeType = ''; // 时间类型
+        let fNum = 0;// 记录4个一组到第几个团
+        let frameData = '';// 记录循环每个图案处理数据
         frameLists.value.forEach((fvalue,findex) => {
-          // 解决一个图形的颜色、时间
-          console.log('fvalue.color:'+fvalue.color);
+          // 颜色处理
+          // console.log('fvalue.color:'+fvalue.color);
           let fcolString = colorToArray(fvalue.color).toString();
-          console.log('fcolString:'+fcolString);
+          // console.log('fcolString:'+fcolString);
           switch(fcolString){
           case '255,0,0': // 红
             color = color + '01';
@@ -614,19 +639,34 @@
           case '0,0,255': // 蓝
             color = color + '07';
             break;
+          default:
+            color = color + '00';
           }
-          let ft16 = fvalue.frameTime.toString(16); // 十六机制
-          if (ft16.length < 2){
-            ft16 = '0' + ft16; // 不够两位补一位0
+
+          // 时间处理 时间4位,2位十六进制转十进制再拼接
+          let ft16 = fvalue.frameTime.toString();
+          switch(ft16.length){
+          case 1:
+            ft16 = '000'+ ft16;
+            break;
+          case 2:
+            ft16 = '00' + fillUp16(parseInt(ft16).toString(16));
+            break;
+          case 3: // 需要拆分
+            ft16 = '0' + ft16.substring(0,0) + fillUp16(parseInt(ft16.substring(1,2)).toString(16));
+            break;
+          case 4:
+            ft16 = fillUp16(parseInt(ft16.substring(0,1)).toString(16))+ fillUp16(parseInt(ft16.substring(1,2)).toString(16));
+            break;
           }
-          frameTime = frameTime + ft16; // 要十六机制
-          timeType = timeType + '01'// 01是秒 00是毫秒 临时都是秒
+          frameTime = frameTime + ft16;
+
           // 转换一列灯珠数据
           let colData = new Array(36); // 36列二进制字符串 每个5位
           colData.fill('');
           fvalue.dotList.forEach((row, rowIndex) => { // 5行
             row.forEach((col, colIndex) => { // 36列
-              if (col.toString() === '255,255,255,1'){ // 临时白表示不亮
+              if (col.toString() === defaultColorS2){ // 临时白表示不亮
                 colData[colIndex] = colData[colIndex] + '0';
               }else{
                 colData[colIndex] = colData[colIndex] + '1';
@@ -638,47 +678,28 @@
             if (s16.length < 2){
               s16 = '0' + s16; // 不够两位补一位0
             }
-            data = data + s16;
+            frameData = frameData + s16;
           })
-        });
-        /*
-        currentFrame.value.dotList.forEach((row, rowIndex) => {
-          row.forEach((col, colIndex) => {
-            let dColor = '';
-            let colString = col.toString()
-            switch(colString){
-            case '255,0,0,1': // 红
-              dColor = '0x01';
-              break;
-            case '255,255,0,1': // 黄
-              dColor = '0x02';
-              break;
-            case '0,255,0,1': // 绿
-              dColor = '0x03';
-              break;
-            case '0,255,255,1': // 青
-              dColor = '0x04';
-              break;
-            case '0,0,255,1': // 蓝
-              dColor = '0x05';
-              break;
-            case '255,0,255,1': // 紫
-              dColor = '0x06';
-              break;
-            case '255,255,255,1': // 白
-              dColor = '0x07';
-              break;
-            case '0,0,0,1': // 黑
-              dColor = '0x08';
-              break;
-            default: // '0,0,0,0': // 不亮
-              dColor = '0x00';
+
+          // 处理每组头部数据
+          fNum = fNum + 1;
+          // 处理每组尾部数据
+          if ((findex + 1) === frameLists.value.length || fNum === 4 ){// 判断是否4帧1组或最后一个图案
+            if (data !== ''){
+              data = data + ','
             }
-            data = data + ' ' + dColor;
-          });
+            console.log('data:' + data);
+            console.log('frameData:' + frameData);
+            console.log('color:' + color);
+            console.log('frameTime:' + frameTime);
+            data = data + fData + '0' + fNum.toString() + frameData + color + frameTime+ '0805';// 08 校验位 05 校验位
+            // 循环相关参数重置
+            fNum = 0;
+            color = '';
+            frameTime = '';
+            frameData = '';
+          }
         });
-        */
-        data = data + color + frameTime + timeType + '0805';// 08 校验位 05 校验位
         return data;
       }
 
@@ -805,7 +826,7 @@
                 }
                 setTimeout(() => {
                   _play(frameLists.value, nextIndex)
-                }, frame.frameTime * 1000);// 临时是秒
+                }, frame.frameTime);// 毫秒
               }
             })
           }
@@ -885,6 +906,7 @@
         currentFrameIndex,
         frameLists,
         historyList,
+        defaultColorS1,
         CaretLeft,
         CaretRight,
         CaretTop,
