@@ -106,7 +106,7 @@
             <el-form-item label="时长" class="form-items">
               <el-input-number
                 v-model="currentFrame.frameTime"
-                :min="1"
+                :min="10"
                 :max="5000"
               />
               <span class="tip">(毫秒)</span>
@@ -712,39 +712,41 @@ export default {
     };
 
     // beiji 生成json
+    // 帧序号         1     0x00-0xFF       gif序号，非gif为0
+    // 帧总数         2     0x0001-0xFFFF   gif总帧数，非gif为1
+    // 帧延时         2     0x0001-0xFFFF   单位ms,以10ms的整倍数设定
+    // 帧亮度         1     0x00-0x03       4级别
+    // NC            2     0x00            预留
+    // RGB色值 36*5*3 540  0x00-0xFF       R-G-B
     const createTmpJson = () => {
       let data = '';
-      let fData = '668801'; // 66 协议头 88 协议头 01 类型
-      fData =
-        fData + fillUp16(Math.ceil(frameLists.value.length / 4).toString(16)); // 4个图案一组
-      let color = ''; // 颜色数据
+      let fData = ''; // 暂时无协议头
+      // fData = fData + fillUp16(Math.ceil(frameLists.value.length / 4).toString(16)); // 4个图案一组
+      // let color = ''; // 颜色数据
+
+      let allNum = fillUp16(frameLists.value.length.toString(16)); // 帧总数
       let frameTime = ''; // 时间数据
-      let fNum = 0; // 记录4个一组到第几个团
+      let light = ''; // 亮度数据
+      let NC = '0000'; // 预留
+
       let frameData = ''; // 记录循环每个图案处理数据
+
       frameLists.value.forEach((fvalue, findex) => {
+        // 处理帧序号
+        if (allNum === '01') {
+          //一帧
+          frameData = '00';
+        } else {
+          frameData = fillUp16(findex.toString(16));
+        }
+        // 处理帧总数
+        frameData = frameData + allNum;
+        // 处理帧延时
+
         // 颜色处理
         // console.log('fvalue.color:'+fvalue.color);
         let fcolString = colorToArray(fvalue.color).toString();
         // console.log('fcolString:'+fcolString);
-        switch (fcolString) {
-          case '255,0,0': // 红
-            color = color + '01';
-            break;
-          case '255,255,0': // 黄
-            color = color + '05';
-            break;
-          case '0,255,0': // 绿
-            color = color + '02';
-            break;
-          case '0,255,255': // 青
-            color = color + '04';
-            break;
-          case '0,0,255': // 蓝
-            color = color + '07';
-            break;
-          default:
-            color = color + '00';
-        }
 
         // 时间处理 时间4位,2位十六进制转十进制再拼接
         let ft16 = fvalue.frameTime.toString();
@@ -854,7 +856,7 @@ export default {
         backgroundColor: 'transparent',
       }).then((canvas) => {
         canvas.toBlob((blob) => {
-          proxy.downloadBlob(blob, currentFrameIndex.value.toString());
+          proxy.downloadBlob(blob, (currentFrameIndex.value + 1).toString());
         });
       });
     };
