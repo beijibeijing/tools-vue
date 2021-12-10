@@ -40,6 +40,14 @@ const routes = [
         },
       },
       {
+        path: 'pixel-newart',
+        name: 'pixelArtNew',
+        component: () => import(/* webpackChunkName: "pixelArtNew" */ '../views/pixel-newart/PixelArtNew'),
+        meta: {
+          title: '像素编辑(new)',
+        },
+      },
+      {
         path: 'yugioh',
         name: 'yugioh',
         component: () => import(/* webpackChunkName: "yugioh" */ '../views/yugioh/Yugioh.vue'),

@@ -1,5 +1,10 @@
 [
   {
+    "title": "像素编辑(新)",
+    "path": "/pixel-newart",
+    "icon": "fa-album"
+  },
+  {
     "title": "像素编辑",
     "path": "/pixel-art",
     "icon": "fa-th"
