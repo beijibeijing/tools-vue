@@ -14,7 +14,9 @@ module.exports = defineConfig({
     node: true,
   },
   extends: [
-    'plugin:vue/recommended',
+    // 'plugin:vue/recommended',
+    'plugin:vue/essential',
+    '@vue/prettier',
   ],
   rules: {
     // js
