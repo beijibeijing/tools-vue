@@ -23,5 +23,5 @@ router.afterEach(() => {
 
 // 设置文档标题
 function setDocumentTitle(to) {
-  document.title = `${to.meta.title} - kooriookami`;
+  document.title = `${to.meta.title} - 手环点阵编辑器`;
 }
